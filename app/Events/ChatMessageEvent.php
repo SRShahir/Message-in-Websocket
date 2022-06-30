@@ -14,6 +14,7 @@ class ChatMessageEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public $message;
     /**
      * Create a new event instance.
      *
@@ -46,4 +47,3 @@ class ChatMessageEvent implements ShouldBroadcast
         ];
     }
 }
-git add .
