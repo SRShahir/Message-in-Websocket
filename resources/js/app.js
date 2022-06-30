@@ -17,9 +17,9 @@ const channel = Echo.channel('public.chat.1');
 
 
 channel.subscribed(() => {
-    console.log('subscribedd! test');
+    console.log('subscribedd!');
 })
-    .listen('list-message', (event) => {
+    .listen('chat-message', (event) => {
         console.log(event);
         const message = event.message;
 
