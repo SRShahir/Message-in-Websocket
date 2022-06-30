@@ -33,6 +33,6 @@ Route::get('ws',function(){
 
 
 Route::post('chat-message',function(Request $request){
-    event(new \App\Events\ChatMessageEvent($request->message));
+    event(new \App\Events\ChatMessageEvent($request->message,auth()->user()));
     return null;
 });
