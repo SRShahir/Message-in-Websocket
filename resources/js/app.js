@@ -1,16 +1,22 @@
 require('./bootstrap');
 const axios = require('axios');
+const { update } = require('lodash');
 
 const form = document.getElementById('form');
 const inputMessage = document.getElementById('input-message');
 const listMessages = document.getElementById('list-messages');
+const inputEmail = document.getElementById('input-email');
+const inputPassword = document.getElementById('input-password');
+const avatars = document.getElementById('avatars');
+const spanTyping = document.getElementById('span-typing');
 form.addEventListener('submit', function (SubmitEvent) {
-    e.preventDefault();
+    SubmitEvent.preventDefault();
     const userInput = inputMessage.value;
 
     axios.post('chat-messages', {
         message: userInput
     })
+    inputMessage.value = "";
 
 });
 
@@ -22,9 +28,9 @@ function getCookies(name) {
     }
 }
 
-function request( options) {
+function request(url, options) {
     const csrfToken = getCookies('XSRF_TOKEN');
-    return fetch({
+    return fetch(url, {
         headers: {
             'content-type': 'application/json',
             'accept': 'application/json',
@@ -41,40 +47,143 @@ function logout() {
     });
 }
 
-function login() {
-    return request('login', {
-        method: 'POST',
-        body: JSON.stringify({
-            email: 'shreya@example.com',
-            password: 'password'
+function login(email, password) {
+    return fetch('/sanctum/csrf-cookie', {
+        headers: {
+            'content-type': 'application/json',
+            'accept': 'application/json'
+        },
+        credentials: 'include'
+    }).then(() => logout())
+        .then(() => {
+            return request('login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: 'email',
+                    password: 'password'
+                })
+            })
+        }).then(() => {
+            document.getElementById('section-login').classList.add('hidden');
+            document.getElementById('section-chat').classList.remove('hidden');
         })
+
+}
+let userOnline = [];
+function userInitial(username) {
+    const names = username.split(' ');
+    return names.map((name) => name[0]).join('').toUpperCase();
+}
+function renderAvatars() {
+    avatars.textContent = '';
+    userOnline.forEach((user) => {
+        const span = document.createElement('span');
+        span.textContent = userInitial(user.name);
+        span.classList.add('avatar');
+        avatars.append(span);
     })
 }
-fetch('/sanctum/csrf-cookie', {
-    headers: {
-        'content-type': 'application/json',
-        'accept': 'application/json'
-    },
-    credentials: 'include'
-}).then(() => logout())
-    .then(() => {
-        return login();
-    }).then(() => {
+function addChatMessage(name, message, color = "black") {
+    const li = document.createElement('li');
 
-        const channel = Echo.private('private.chat.1');
+    li.classList.add('d-flex', 'flex-col');
+    const span = document.createElement('span');
+    span.classList.add('message-auther');
+    span.textContent = name;
 
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message;
+    messageSpan.style.color = color;
+    li.append(span, messageSpan);
+    listMessages.append(li);
 
-        channel.subscribed(() => {
-            console.log('subscribedd!');
+}
+
+document.getElementById('form-login').addEventListener('submit', function (SubmitEvent) {
+    SubmitEvent.preventDefault();
+    const email = inputEmail.value;
+    const password = inputPassword.value;
+    login(email, password)
+        .then(() => {
+            const channel = Echo.join('presence.chat.1');
+            inputMessage.addEventListener('input', function (e) {
+                console.log('aa');
+                if (inputMessage.value.length === 0) {
+                    channel.whisper('stop-typing');
+                } else {
+                    channel.whisper('typing', {
+                        email: email,
+                    });
+                }
+            })
+
+            channel.here((users) => {
+                userOnline = [...users];
+                renderAvatars();
+                console.log({ users })
+                console.log('subscribedd!');
+            })
+                .joining((user) => {
+                    console.log({ user }, 'joining');
+                    userOnline.push(user);
+                    renderAvatars();
+                    addChatMessage(user.name, 'joined the chat');
+                })
+                .leaving((user) => {
+                    console.log({ user }, 'leaving');
+                    userOnline = userOnline.filter((userOnline) => userOnline.id !== user.id);
+                    renderAvatars();
+                    addChatMessage(user.name, 'left the chat', 'grey');
+                })
+                .listen('.chat-message', (e) => {
+                    console.log(e);
+                    const message = e.message;
+                    addChatMessage(e.user.name, message);
+                })
+                .listenForWhisper('typing', (e) => {
+                    console.log(e);
+                    spanTyping.textContent = e.email + ' is typing...';
+                })
+                .listenForWhisper('stop-typing', (e) => {
+                    spanTyping.textContent = '';
+                })
         })
-            .listen('chat-message', (event) => {
-                console.log(event);
-                const message = event.message;
-                const li = document.createElement('li');
-                li.innerText = message;
-                listMessages.append(li);
-            });
+})
+updatePost();
 
-    })
+function updatePost() {
+    const socket = new WebSocket(`ws://${window.localhost.hostname} 6001 / socket / update - post ? appKey = ${process.env.MIX_PUSHER_APP_KEY} `);
+    socket.onopen = function (event) {
+        console.log('on open!!');
+        socket.send(JSON.stringify({
+            id: 1,
+            payload: {
+                title: 'abc1223',
+
+            }
+        }))
+        socket.onmessage = function (event) {
+            console.log(event);
+
+        }
+    }
+
+}
+
+        // const channel = Echo.private('private.chat.1');
+
+
+        // channel.subscribed(() => {
+        //     console.log('subscribedd!');
+        // })
+        //     .listen('chat-message', (event) => {
+        //         console.log(event);
+        //         const message = event.message;
+        //         const li = document.createElement('li');
+        //         li.innerText = message;
+        //         listMessages.append(li);
+        //     });
+
+
 
 

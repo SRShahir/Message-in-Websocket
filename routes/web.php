@@ -19,6 +19,29 @@ use App\Http\Controllers\MessageController;
 Route::get('/', function () {
     return view('welcome');
 });
+Route::get('/app', function () {
+    return view('app');
+});
+
+Route::get('/reset-password/{token}', function ($token) {
+    return view('auth.password-reset', [
+        'token' => $token
+    ]);
+})->middleware(['guest:' . config('fortify.guard')])
+    ->name('password.reset');
+
+Route::get('/shared/posts/{post}', function (Request $request, Post $post) {
+
+    return "Specially made just for you ;) Post id: {$post->id}";
+})->name('shared.post')->middleware('signed');
+
+
+
+// Route::get('/socket/update-post', UpdatePostSocketHandler::class);
+
+
+
+
 
 Route::get('playground',function(){
 event(new \App\Events\ChatMessageEvent());
@@ -36,3 +59,7 @@ Route::post('chat-message',function(Request $request){
     event(new \App\Events\ChatMessageEvent($request->message,auth()->user()));
     return null;
 });
+
+// Route::post('login',[MessageController::class,'login']);
+// Route::post('logout',[MessageController::class, 'logout']);
+

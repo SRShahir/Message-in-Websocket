@@ -10,13 +10,13 @@ const mix = require('laravel-mix');
  | file for the application as well as bundling up all the JS files.
  |
  */
-
+mix.browserSync("http://localhost:8000");
 mix.js('resources/js/app.js', 'public/js')
     .postCss('resources/css/app.css', 'public/css');
 
-mix.options({
-    hmrOptions: {
-        host: 'localhost',
-        port: '8080'
-    },
-});
+// mix.options({
+//     hmrOptions: {
+//         host: 'localhost',
+//         port: '8080'
+//     },
+// });
